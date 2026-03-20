@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "nodemon --env-file='.env.development.local' src/index.js",
+    "dev": "nodemon --env-file=\".env.development.local\" src/index.js",
     "lint": "eslint src",
-    "start": "node --env-file-if-exists='.env' src/index.js"
+    "start": "node --env-file-if-exists=\".env\" src/index.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
