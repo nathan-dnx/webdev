@@ -14,7 +14,8 @@ async function buildApp() {
     logger: envToLogger[config.env] ?? true,
   })
   await fastify.register(cors, {
-    origin: true,
+    origin: config.appBaseUrl, // 👈 On remplace 'true' par ça
+    credentials: true, // 👈 Et on ajoute cette ligne magique pour les cookies !
   })
   await fastify.register(authPlugin)
   await fastify.register(mongoosePlugin)

@@ -22,6 +22,7 @@ const saveMoto = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
+      credentials: 'include',
       body: JSON.stringify(motoForm.value)
     })
 

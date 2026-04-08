@@ -208,8 +208,9 @@ function authRoutes(app) {
     reply.setCookie(config.jwt.cookieName, token, {
       path: '/',
       httpOnly: true,
-      sameSite: 'lax',
-      secure: config.env === 'production',
+      sameSite: 'none',
+      secure: true,
+      maxAge: 86400,
     })
 
     return reply.send({ message: 'Authentification réussie' })

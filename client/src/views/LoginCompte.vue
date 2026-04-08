@@ -25,6 +25,7 @@ const submitAuth = async () => {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload)
     })
 
