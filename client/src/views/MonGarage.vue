@@ -12,7 +12,8 @@ const fetchMotos = async () => {
       headers: {
 
         'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+      },
+      credentials: 'include',
     })
 
     if (response.ok) {

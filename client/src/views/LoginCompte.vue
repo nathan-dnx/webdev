@@ -1,22 +1,29 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const isLogin = ref(true)
 
-// Les 3 variables dont on a besoin
+
+const dejaConnecte = ref(false)
+
+// Les variables dont on a besoin
 const email = ref('')
 const username = ref('')
 const password = ref('')
 const message = ref('')
 
+onMounted(() => {
+  if (localStorage.getItem('estConnecte') === 'oui') {
+    dejaConnecte.value = true
+  }
+})
+
 const submitAuth = async () => {
   const endpoint = isLogin.value ? 'login' : 'register'
 
   // On prépare les données à envoyer
-  // Si on se connecte : on envoie juste email + mdp
-  // Si on s'inscrit : on envoie email + pseudo + mdp
   const payload = isLogin.value
     ? { email: email.value, password: password.value }
     : { email: email.value, username: username.value, password: password.value }
@@ -35,11 +42,13 @@ const submitAuth = async () => {
       if (isLogin.value) {
         message.value = '✅ Connexion réussie ! Redirection...'
         if (data.token) localStorage.setItem('token', data.token)
+
+
+        localStorage.setItem('estConnecte', 'oui')
+
         setTimeout(() => router.push('/garage'), 1000)
       } else {
-
         message.value = '✅ Compte créé ! Regarde tes emails (connexion directe pour le test, j ai désac la vérification).'
-
         setTimeout(() => isLogin.value = true, 2000)
       }
     } else {
@@ -53,36 +62,48 @@ const submitAuth = async () => {
 
 <template>
   <div class="auth-page">
-    <h2>{{ isLogin ? '🔐 Connexion' : '📝 Créer un compte' }}</h2>
 
-    <form @submit.prevent="submitAuth" class="auth-form">
+    <div v-if="dejaConnecte" class="already-logged-in">
+      <h2>Tu es déjà connecté ! 🏍️</h2>
+      <p>Pas besoin de te reconnecter, ton casque est déjà enfilé.</p>
+      <RouterLink to="/garage">
+        <button type="button">Aller à mon garage</button>
+      </RouterLink>
+    </div>
 
-      <div class="form-group">
-        <label>Email :</label>
-        <input type="email" v-model="email" required placeholder="pilote@moto.com" />
-      </div>
+    <div v-else>
+      <h2>{{ isLogin ? '🔐 Connexion' : '📝 Créer un compte' }}</h2>
 
-      <div v-if="!isLogin" class="form-group">
-        <label>Pseudo :</label>
-        <input type="text" v-model="username" required placeholder="DarkRider99" />
-      </div>
+      <form @submit.prevent="submitAuth" class="auth-form">
 
-      <div class="form-group">
-        <label>Mot de passe :</label>
-        <input type="password" v-model="password" required placeholder="********" />
-      </div>
+        <div class="form-group">
+          <label>Email :</label>
+          <input type="email" v-model="email" required placeholder="pilote@moto.com" />
+        </div>
 
-      <button type="submit">{{ isLogin ? 'Se connecter' : "S'inscrire" }}</button>
-    </form>
+        <div v-if="!isLogin" class="form-group">
+          <label>Pseudo :</label>
+          <input type="text" v-model="username" required placeholder="DarkRider99" />
+        </div>
 
-    <p class="toggle-text">
-      {{ isLogin ? "Pas encore de compte ?" : "Déjà un compte ?" }}
-      <span @click="isLogin = !isLogin" class="toggle-link">
-        {{ isLogin ? "S'inscrire ici" : "Se connecter" }}
-      </span>
-    </p>
+        <div class="form-group">
+          <label>Mot de passe :</label>
+          <input type="password" v-model="password" required placeholder="********" />
+        </div>
 
-    <p v-if="message" class="feedback-msg">{{ message }}</p>
+        <button type="submit">{{ isLogin ? 'Se connecter' : "S'inscrire" }}</button>
+      </form>
+
+      <p class="toggle-text">
+        {{ isLogin ? "Pas encore de compte ?" : "Déjà un compte ?" }}
+        <span @click="isLogin = !isLogin" class="toggle-link">
+          {{ isLogin ? "S'inscrire ici" : "Se connecter" }}
+        </span>
+      </p>
+
+      <p v-if="message" class="feedback-msg">{{ message }}</p>
+    </div>
+
   </div>
 </template>
 
@@ -91,9 +112,11 @@ const submitAuth = async () => {
 .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
 label { font-weight: bold; margin-bottom: 5px; }
 input { padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-button { width: 100%; padding: 10px; background-color: #2c3e50; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+button { width: 100%; padding: 10px; background-color: #2c3e50; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
 button:hover { background-color: #34495e; }
 .toggle-text { text-align: center; margin-top: 15px; font-size: 14px; }
 .toggle-link { color: #ff4757; cursor: pointer; font-weight: bold; text-decoration: underline; }
 .feedback-msg { text-align: center; margin-top: 15px; font-weight: bold; }
+.already-logged-in { text-align: center; }
+.already-logged-in p { margin-bottom: 20px; color: #666; }
 </style>
