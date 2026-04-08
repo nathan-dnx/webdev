@@ -59,11 +59,21 @@ function authRoutes(app) {
       return reply.status(400).send({ error: 'Email invalide' })
     }
 
-    // Vérifier si l'utilisateur existe déjà
-    // TODO: faire une vérification sur le username aussi
-    const existingUser = await User.findOne({ email: normalizedEmail })
+    // Vérifier si l'utilisateur existe déjà (email OU username)
+    const existingUser = await User.findOne({
+      $or: [
+        { email: normalizedEmail },
+        { username },
+      ],
+    })
+
     if (existingUser) {
-      return reply.status(409).send({ error: 'Cet email est déjà utilisé' })
+      if (existingUser.email === normalizedEmail) {
+        return reply.status(409).send({ error: 'Cet email est déjà utilisé' })
+      }
+      if (existingUser.username === username) {
+        return reply.status(409).send({ error: 'Ce nom d\'utilisateur est déjà pris' })
+      }
     }
 
     // Créer le hash du mot de passe et le token de validation

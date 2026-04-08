@@ -17,6 +17,7 @@
     "lint": "turbo run lint --parallel"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "turbo": "^2.8.14"
   },
   "devDependencies": {

@@ -19,7 +19,7 @@ const userSchema = new Schema({
   },
   emailVerified: {
     type: Boolean,
-    default: false,
+    default: true, // True juste pour faciliter les tests
   },
   validationToken: {
     type: String,

@@ -1,59 +1,88 @@
-// import User from './user-schema.js' // À décommenter lors de l'implémentation des routes
+import User from './user-schema.js'
 
 /**
  *
  * @param {import('fastify').FastifyInstance} app
  */
 function usersRoutes(app) {
-  app.get('/verify-email', async (request, _reply) => {
-    // Récupérer le token de validation depuis la querystring de la requête
+  app.get('/verify-email', async (request, reply) => {
+    // Récupérer le token de validation depuis la querystring
     const { token } = request.query
 
-    // TODO: Valider la présence du token
+    // Valider la présence du token
+    if (!token) {
+      return reply.status(400).send({ error: 'Token de validation manquant' })
+    }
 
-    // TODO: Rechercher l'utilisateur correspondant au token de validation
-    // tip: https://mongoosejs.com/docs/queries.html
-    // const user =
+    // Rechercher l'utilisateur correspondant au token
+    const user = await User.findOne({ validationToken: token })
 
-    // TODO: gérer le cas où le token est invalide ou expiré
+    // Gérer le cas où le token est invalide ou expiré
+    if (!user) {
+      return reply.status(400).send({ error: 'Token invalide ou utilisateur introuvable' })
+    }
 
-    // TODO: vérifier si l'utilisateur a déjà validé son email
+    // Vérifier si l'utilisateur a déjà validé son email
+    if (user.emailVerified) {
+      return reply.status(400).send({ error: 'Cet email est déjà validé' })
+    }
 
-    // TODO: marquer l'email de l'utilisateur comme vérifié et supprimer le token de validation
-    // TODO: sauvegarder les modifications de l'utilisateur dans la base de données
+    // Marquer l'email comme vérifié et supprimer le token
+    user.emailVerified = true
+    user.validationToken = null
+    // Sauvegarder les modifications dans la base de données
+    await user.save()
+
+    return reply.send({ message: 'Email validé avec succès !' })
   })
 
   app.get('/me', {
-    onRequest: [app.authenticate], // Protéger cette route pour qu'elle soit accessible uniquement aux utilisateurs authentifiés
+    onRequest: [app.authenticate], // Route protégée
   }, async (request, reply) => {
     return reply.send({ user: request.currentUser })
   })
 
-  // TODO: protéger aussi les routes suivantes pour qu'elles soient accessibles uniquement aux utilisateurs authentifiés (et éventuellement avec des rôles spécifiques)
-  app.get('/', async (request, reply) => {
-    // TODO: Implémenter la logique pour récupérer les utilisateurs depuis la base de données
-    // tip: https://mongoosejs.com/docs/queries.html
-    // TODO: Implémenter la pagination, les filtres, etc.
-    // tips: https://mongoosejs.com/docs/api/query.html#Query.prototype.sort()
-    //       https://mongoosejs.com/docs/api/query.html#Query.prototype.skip()
-    //       https://mongoosejs.com/docs/api/query.html#Query.prototype.limit()
-    return reply.send({ message: 'List of users' })
+  // Récupérer tous les utilisateurs (Route protégée)
+  app.get('/', {
+    onRequest: [app.authenticate],
+  }, async (request, reply) => {
+    // On récupère les utilisateurs (limité à 50) sans afficher leurs mots de passe
+    const users = await User.find().select('-passwordHash').limit(50)
+    return reply.send(users)
   })
 
-  app.get('/:id', async (request, reply) => {
-    // Récupérer l'ID de l'utilisateur depuis les paramètres de la route
-    const { id } = request.params // Attention: les params sont toujours des strings, même si l'ID est un ObjectId dans MongoDB
-    // TODO: Implémenter la logique pour récupérer un utilisateur par ID depuis la base de données
-    // tip: https://mongoosejs.com/docs/queries.html
-    // TODO: gérer le cas où l'utilisateur n'existe pas
-    return reply.send({ message: `User with ID ${user._id}` })
-  })
-
-  app.delete('/:id', async (request, reply) => {
-    // Récupérer l'ID de l'utilisateur depuis les paramètres de la route
+  // Récupérer un utilisateur par son ID (Route protégée)
+  app.get('/:id', {
+    onRequest: [app.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params
-    // TODO: Implémenter la logique pour supprimer un utilisateur par ID depuis la base de données
-    // tip: https://mongoosejs.com/docs/queries.html
+
+    try {
+      const user = await User.findById(id).select('-passwordHash')
+      if (!user) {
+        return reply.status(404).send({ error: 'Utilisateur introuvable' })
+      }
+      return reply.send(user)
+    } catch {
+      return reply.status(400).send({ error: 'Format d\'ID invalide' })
+    }
+  })
+
+  // Supprimer un utilisateur par son ID (Route protégée)
+  app.delete('/:id', {
+    onRequest: [app.authenticate],
+  }, async (request, reply) => {
+    const { id } = request.params
+
+    try {
+      const deletedUser = await User.findByIdAndDelete(id)
+      if (!deletedUser) {
+        return reply.status(404).send({ error: 'Utilisateur introuvable' })
+      }
+      return reply.send({ message: 'Utilisateur supprimé avec succès' })
+    } catch {
+      return reply.status(400).send({ error: 'Format d\'ID invalide' })
+    }
   })
 }
 
